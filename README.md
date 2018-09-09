@@ -1,18 +1,25 @@
-# spring-samples-annotations
-Plain and simple Spring samples using Spring annotations components scan.
+# spring-aop-samples
+Simple Spring AOP samples using simulated service and DAO layers.
 
 # Configuration
 
 * Spring 5.8.0
+* Spring AOP 5.8.0
+* AspectJ 1.8.3
 
 # Use case
 
-Simple and plain Spring samples repository that uses main java classes to test each case.
-It includes basic functionality:
+Simple Spring AOP samples using simulated service and DAO layers.
 
-* Creating and retrieving beans
-* Bean Lifecycle
-* Bean Scope
+The following AOP features can be found in this project.
+
+ * @Before, @After advices
+ * @Around and exception management. Target method return value and exception handling
+ * JoinPoint usage
+ * @AfterReturning and result usage.
+ * @AfterThrowing and exception usage
+ * Different pointcut expressions
+ * @Order (in coordination with two other aspects)
 
 # Getting started
 
@@ -25,64 +32,73 @@ To get this Maven project working:
   
 # Proposed Demo Main Apps
 
-## Demo01BasicSpringAnnotationsApp.java:
+## Demo01BeforeOrderApp.java:
 
-Simple Spring application that creates a context from a XML file (applicationContext.xml),
-which sets the scanning configuration at com.gallelloit.spring package. Spring will search in that package and all subpackages
-for classes defined with @Component annotation.
+Simple main app to check the order of three @Before aspects that are triggered for the method: `accountDao.addAccount(theAccount, true);`
 
-This app gets the bean cricketCoach, which implements the interface Coach. This coach implementation uses internally
-the implementation RandomFortuneService of interface FortuneService using @Autowired and @Qualifier annotations
-in the fortuneService property.
+`MyLoggingAspect` uses a JoinPoint argument to display target method name and arguments. 
 
-The values of the plain private properties in CricketCoach implementation are fetch from sports.properties
-This configuration is specified also in the applicationContext.xml:
+## Demo02AfterAfterReturningApp.java:
 
- - First tell Spring a placeholder property: '<context:property-placeholder location="classpath:sport.properties"/>'
- - Then, in the bean itself, i.e., in the class definition, a @Value annotation is used on each property:
+Simple main app to check the execution of several aspects triggered when findAccounts is called with
+the argument set to false.
 
- ```
-		@Value(value="${foo.email}")
- 		private String emailAddress;
- 	
- 		@Value(value="${foo.team}")
- 		private String team;
- ```
+* 1st. Since it is a DAO method and it is not a setter or a getter, the @Before methods are triggered
+	`@Before("com.gallelloit.aopdemo.aspect.AopExpressions.forDaoPackageNoGetterSetter()")`
 
-This Coach implementation uses internally the implementation RandomFortuneService of interface FortuneService
+* 2nd. @After method is called
+	`@After("execution(* com.gallelloit.aopdemo.dao.AccountDAO.findAccounts(..))")`
 
-## Demo02LifeCycleAnnotationsApp.java:
- 
-Simple Spring application that creates a context from a XML file (applicationContext.xml),
-which sets the scanning configuration at com.gallelloit.spring package. Spring will search in that package and all subpackages
-for classes defined with @Component annotation.
+* 3rd. @AfterReturning method is called. The result argument is used to display the returning value
+from the triggered method.
+	```
+	@AfterReturning(
+	 *			pointcut="execution(* com.gallelloit.aopdemo.dao.AccountDAO.findAccounts(..))",
+	 *			returning="result"
+	 *			)
+	```
 
-This app gets the bean trackCoach, which implements the interface Coach. This coach implementation uses internally the implementation RandomFortuneService of interface FortuneService using
-@Autowired and @Qualifier annotations in the constructor.
+Additionally, the three methods in `MyLoggingAspect` class use a JoinPoint argument to display target method name and
+arguments.
 
-This demo application tests the lifecycle of Spring beans. TrackCoach object defines two methods with the annotations
-@Postconstruct and @Predestroy. Some messages are displayed to see when each method is executed.
+## Demo03AfterThrowingApp.java
 
-## Demo03BeanScopeAnnotationsApp.xml
+Simple main app to check the execution of several aspects triggered when an exception is thrown in the method findAccounts
 
-Simple Spring application that creates a context from a XML file (applicationContext.xml),
-which sets the scanning configuration at com.gallelloit.spring package. Spring will search in that package
-and all subpackages for classes defined with @Component annotation.
+* 1st. Since it is a DAO method and it is not a setter or a getter, the @Before methods are triggered
+	`@Before("com.gallelloit.aopdemo.aspect.AopExpressions.forDaoPackageNoGetterSetter()")`
 
-It gets the bean footballCoach, which implements the interface Coach
-This Coach implementation uses internally the implementation HappyFortuneService of interface FortuneService
-as a result of the use of @Component and @Qualifier annotations in the constructor.
+* 2nd. The AfterThrowing advice from `MyLogginAspect` is triggered. In this type of advice, the exception cannot be stopped.
+So a simple message with the exception is displayed 
 
-The resolved issue of this example is testing the two most used bean scopes from Spring: Singleton and Prototype
+	```
+	 *	@AfterThrowing(
+	 *			pointcut="execution(* com.gallelloit.aopdemo.dao.AccountDAO.findAccounts(..))",
+	 *			throwing="theExc"
+	 *			)
+	```
 
-In the FootballCoach object, two alternative versions of the bean definition are specified through the
-@Scope annotation, which must be specified with the scope strategy. The original proposed solution
-has both alternative lines, one of which must be commented.
+Additionally, the two methods in `MyLoggingAspect` class use a JoinPoint argument to display target method name and
+arguments.
 
-- On one side, Singleton (`@Scope(value="singleton")`), the default stratey, will make Spring to create and
-return one instance of the bean no matter how many times the bean is retrieved. You can see in the example how
-the memory location for the two retrieved objects is the same.
+## Demo04AroundApp.java
 
-- Whereas when Prototype strategy is defined (`@Scope(value="prototype")`), any time a new bean is requested to the container, a different
-instance is created and retrieved. This test can be performed commenting the singleton line and uncommenting
-the prototype one.
+The Around method is triggered as `getFortune(boolean)` from `TrafficFortuneService.java` is called.
+`@Around("execution(* com.gallelloit.aopdemo.service.*.getFortune(..))")`
+
+This method:
+
+* uses a JoinPoint argument to display target method name and arguments.
+* uses the result argument to display information about the returned object.
+* accepts a boolean argument. In case of true, it simulates an exception. The purposed sample shows the different
+possible cases that can take place
+  * Normal execution without exception.
+  * Execution with a thrown exception. Since this type of aspect is the only that can handle the thrown exception, two different strategies are shown in the code (possible among many others)
+   * Option 1: Handle the result and go on with no exception. (Main App will never notice)
+	  	```
+	  	result = "Major accident! But no worries, helicopter is on the way!!";`
+	  	```
+   * Option 2: Just rethrow the exception
+	  	```
+	  	throw e;
+	  	```
