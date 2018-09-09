@@ -53,9 +53,9 @@ the argument set to false.
 from the triggered method.
 	```
 	@AfterReturning(
-	 *			pointcut="execution(* com.gallelloit.aopdemo.dao.AccountDAO.findAccounts(..))",
-	 *			returning="result"
-	 *			)
+	 	pointcut="execution(* com.gallelloit.aopdemo.dao.AccountDAO.findAccounts(..))",
+	 	returning="result"
+	 )
 	```
 
 Additionally, the three methods in `MyLoggingAspect` class use a JoinPoint argument to display target method name and
@@ -72,10 +72,10 @@ Simple main app to check the execution of several aspects triggered when an exce
 So a simple message with the exception is displayed 
 
 	```
-	 *	@AfterThrowing(
-	 *			pointcut="execution(* com.gallelloit.aopdemo.dao.AccountDAO.findAccounts(..))",
-	 *			throwing="theExc"
-	 *			)
+	 @AfterThrowing(
+	 	pointcut="execution(* com.gallelloit.aopdemo.dao.AccountDAO.findAccounts(..))",
+	 	throwing="theExc"
+	 )
 	```
 
 Additionally, the two methods in `MyLoggingAspect` class use a JoinPoint argument to display target method name and
